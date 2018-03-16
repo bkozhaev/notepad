@@ -11,6 +11,29 @@ class Post
     post_types[type].new
   end
 
+  def self.find(limit, type, id)
+
+    db = SQLite3::Database.open(@@SQLITE_DB_FILE)
+
+    unless id.nil?
+      db.results_as_hash = true
+
+      result = db.execute("SELECT * FROM posts WHERE rowid = ?", id)
+
+      result = result[0] if result.is_a? Array
+      db.close
+
+      if result.empty?
+        puts "Такой id #{id} не найден в базе"
+        nil
+      else
+        post = create(result['type'])
+        post.load_data(result)
+        post
+      end
+    end
+  end
+
   def initialize
     @created_at = Time.now
     @text = nil
@@ -62,5 +85,9 @@ class Post
       'type' => self.class.name,
       'created_at' => @created_at.to_s
     }
+  end
+
+  def load_data(data_hash)
+    @created_at = Time.parse(data_hash['created_at'])
   end
 end
