@@ -1,7 +1,7 @@
 require 'sqlite3'
 class Post
 
-  @@SQLITE_DB_FILE = 'notepad.sqlite'
+  SQLITE_DB_FILE = 'notepad.sqlite'.freeze
 
   def self.post_types
     {'Memo' => Memo, 'Link' => Link, 'Task' => Task}
@@ -13,24 +13,45 @@ class Post
 
   def self.find(limit, type, id)
 
-    db = SQLite3::Database.open(@@SQLITE_DB_FILE)
+    db = SQLite3::Database.open(SQLITE_DB_FILE)
 
-    unless id.nil?
+    if !id.nil?
       db.results_as_hash = true
 
-      result = db.execute("SELECT * FROM posts WHERE rowid = ?", id)
+      result = db.execute('SELECT * FROM posts WHERE  rowid = ?', id)
 
       result = result[0] if result.is_a? Array
       db.close
 
       if result.empty?
-        puts "Такой id #{id} не найден в базе"
+        puts "Такой id #{id} не найден в базе :("
         nil
       else
         post = create(result['type'])
         post.load_data(result)
         post
       end
+    else
+      db.results_as_hash = false
+
+      query = "SELECT rowid, * FROM posts"
+
+      query += "WHERE type = :type " unless type.nil?
+      query += "ORDER by rowid DESC "
+
+      query += "LIMIT :limit " unless limit.nil?
+
+      statement = db.prepare query
+
+      statement.bind_param('type', type) unless type.nil?
+      statement.bind_param('limit', limit) unless limit.nil?
+
+      result = statement.execute!
+
+      statement.close
+      db.close
+
+      result
     end
   end
 
@@ -54,7 +75,7 @@ class Post
       file.puts(item)
     end
     file.close
-    puts "Ура, запись сохранена!"
+    puts "╨г╤А╨░, ╨╖╨░╨┐╨╕╤Б╤М ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╨░!"
   end
 
   def file_path
@@ -63,7 +84,7 @@ class Post
   end
 
   def save_to_db
-    db = SQLite3::Database.open(@@SQLITE_DB_FILE)
+    db = SQLite3::Database.open(SQLITE_DB_FILE)
     db.results_as_hash = true
 
     db.execute(

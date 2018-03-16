@@ -5,7 +5,7 @@ class Memo < Post
     @text = []
     line = nil
     while line != "end" do
-      line = STDIN.gets.chomp
+      line = gets.encode("UTF-8").chomp
       @text << line
     end
     @text.pop
